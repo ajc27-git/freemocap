@@ -41,21 +41,37 @@ def run_reprojection_error_filtering(
     else:
         num_tracked_points = processing_parameters.tracking_model_info.num_tracked_points
 
+    # (
+    #     reprojection_filtered_skel3d_frame_marker_xyz,
+    #     reprojection_filtered_skeleton_reprojection_error_fr_mar,
+    #     reprojection_filtered_skeleton_reprojection_error_cam_fr_mar,
+    # ) = filter_by_reprojection_error(
+    #     reprojection_error_camera_frame_marker=skeleton_reprojection_error_cam_fr_mar,
+    #     reprojection_error_frame_marker=skeleton_reprojection_error_fr_mar,
+    #     reprojection_error_confidence_threshold=processing_parameters.anipose_triangulate_3d_parameters_model.reprojection_error_confidence_cutoff,
+    #     image_2d_data=image_data_numCams_numFrames_numTrackedPts_XYZ[:, :, :, :2],
+    #     raw_skel3d_frame_marker_xyz=raw_skel3d_frame_marker_xyz,
+    #     anipose_calibration_object=anipose_calibration_object,
+    #     num_tracked_points=num_tracked_points,
+    #     use_triangulate_ransac=processing_parameters.anipose_triangulate_3d_parameters_model.use_triangulate_ransac_method,
+    #     minimum_cameras_to_reproject=processing_parameters.anipose_triangulate_3d_parameters_model.minimum_cameras_to_reproject,
+    # )
+
     (
         reprojection_filtered_skel3d_frame_marker_xyz,
         reprojection_filtered_skeleton_reprojection_error_fr_mar,
         reprojection_filtered_skeleton_reprojection_error_cam_fr_mar,
-    ) = filter_by_reprojection_error(
-        reprojection_error_camera_frame_marker=skeleton_reprojection_error_cam_fr_mar,
-        reprojection_error_frame_marker=skeleton_reprojection_error_fr_mar,
-        reprojection_error_confidence_threshold=processing_parameters.anipose_triangulate_3d_parameters_model.reprojection_error_confidence_cutoff,
+    ) = filter_by_reprojection_error_iterative(
         image_2d_data=image_data_numCams_numFrames_numTrackedPts_XYZ[:, :, :, :2],
         raw_skel3d_frame_marker_xyz=raw_skel3d_frame_marker_xyz,
         anipose_calibration_object=anipose_calibration_object,
-        num_tracked_points=num_tracked_points,
-        use_triangulate_ransac=processing_parameters.anipose_triangulate_3d_parameters_model.use_triangulate_ransac_method,
-        minimum_cameras_to_reproject=processing_parameters.anipose_triangulate_3d_parameters_model.minimum_cameras_to_reproject,
+        reprojection_error_frame_marker=skeleton_reprojection_error_fr_mar,
+        reprojection_error_camera_frame_marker=skeleton_reprojection_error_cam_fr_mar,
+        minimum_cameras_to_reproject=3,
+        error_multiplier_threshold=2.5,
+        max_iterations=5,
     )
+
     save_3d_data_to_npy(
         data3d_numFrames_numTrackedPoints_XYZ=reprojection_filtered_skel3d_frame_marker_xyz,
         data3d_numFrames_numTrackedPoints_reprojectionError=reprojection_filtered_skeleton_reprojection_error_fr_mar,
@@ -282,3 +298,268 @@ def plot_reprojection_error(
     plt.legend(loc="upper right")
     logger.info(f"Saving debug plots to: {output_filepath}")
     plt.savefig(output_filepath, dpi=300)
+
+
+import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
+
+def filter_by_reprojection_error_iterative(
+    image_2d_data: np.ndarray,
+    raw_skel3d_frame_marker_xyz: np.ndarray,
+    anipose_calibration_object,
+    reprojection_error_frame_marker: np.ndarray,
+    reprojection_error_camera_frame_marker: np.ndarray,
+    minimum_cameras_to_reproject: int = 2,
+    error_multiplier_threshold: float = 2.5,
+    max_iterations: int = 5,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Iterative per-frame, per-marker reprojection filtering.
+    """
+    num_cams, num_frames, num_markers, _ = image_2d_data.shape
+    filtered_skel3d_frame_marker_xyz = raw_skel3d_frame_marker_xyz.copy()
+    
+    # Inicializar arrays de error actualizados
+    updated_reprojection_error_frame_marker = reprojection_error_frame_marker.copy()
+    updated_reprojection_error_camera_frame_marker = reprojection_error_camera_frame_marker.copy()
+
+    logger.info(f"Executing filtering on {num_frames} frames, {num_markers} markers")
+    logger.info(f"Parameters: minimum_cameras_to_reproject={minimum_cameras_to_reproject}, error_multiplier_threshold={error_multiplier_threshold}, max_iterations={max_iterations}")
+
+    # Define problematic frames range for detailed debugging
+    PROBLEMATIC_FRAMES = range(47, 48)
+    # TARGET_MARKERS = range(0, 75)  # Body and hands
+    TARGET_MARKERS = range(27, 28)  # Body
+
+    # --- Bucle principal: frame por frame, marker por marker ---
+    points_processed = 0
+    points_filtered = 0
+    cameras_removed_total = 0
+    
+    for frame in range(num_frames):
+        # Only process problematic frames for debugging
+        if frame not in PROBLEMATIC_FRAMES:
+            # Skip non-problematic frames or copy original data
+            continue
+            
+        logger.info(f"=== PROCESSING PROBLEMATIC FRAME {frame} ===")
+            
+        for marker in range(num_markers):
+            # Only process foot markers for debugging
+            if marker not in TARGET_MARKERS:
+                continue
+                
+            points_processed += 1
+            
+            # Find valid cameras for this point (non-NaN)
+            valid_cams = []
+            for cam_idx in range(num_cams):
+                if not np.any(np.isnan(image_2d_data[cam_idx, frame, marker, :])):
+                    valid_cams.append(cam_idx)
+            
+            logger.info(f"Frame {frame}, Marker {marker}: {len(valid_cams)} valid cameras: {valid_cams}")
+            
+            # If not enough cameras, mark as NaN and continue
+            if len(valid_cams) < minimum_cameras_to_reproject:
+                logger.warning(f"Frame {frame}, Marker {marker}: Insufficient cameras ({len(valid_cams)}), setting to NaN")
+                filtered_skel3d_frame_marker_xyz[frame, marker, :] = np.nan
+                points_filtered += 1
+                continue
+
+            # List of cameras to use (start with all valid ones)
+            cams_to_use = valid_cams.copy()
+            best_point_3d = np.full(3, np.nan)
+            best_reprojection_errors = np.full(num_cams, np.nan)
+            
+            # Store original 2D points for comparison
+            original_2d_points = {}
+            for cam_idx in valid_cams:
+                original_2d_points[cam_idx] = image_2d_data[cam_idx, frame, marker, :].copy()
+            
+            logger.info(f"Frame {frame}, Marker {marker}: Original 2D points: {original_2d_points}")
+            
+            # --- Iterations to remove cameras with bad error ---
+            for iteration in range(max_iterations):
+                logger.info(f"Frame {frame}, Marker {marker}: Iteration {iteration + 1}, using cameras: {cams_to_use}")
+                
+                # Triangulation with current cameras
+                points_2d_subset = image_2d_data[cams_to_use, frame, marker, :]
+                
+                # Triangulation using anipose
+                point_3d, reproj_errors = _triangulate_single_point_anipose(
+                    anipose_calibration_object, 
+                    points_2d_subset, 
+                    cams_to_use
+                )
+                
+                # If triangulation failed, exit
+                if np.any(np.isnan(point_3d)):
+                    logger.warning(f"Frame {frame}, Marker {marker}: Triangulation failed, resulting in NaN")
+                    break
+                
+                logger.info(f"Frame {frame}, Marker {marker}: 3D point: {point_3d}")
+                
+                # Calculate reprojection errors for used cameras
+                errors_used = []
+                cam_errors_map = {}
+                for i, cam_idx in enumerate(cams_to_use):
+                    if not np.isnan(reproj_errors[i]):
+                        errors_used.append(reproj_errors[i])
+                        cam_errors_map[cam_idx] = reproj_errors[i]
+                        logger.info(f"  Camera {cam_idx}: error = {reproj_errors[i]:.3f}")
+                
+                # If no valid errors, exit
+                if not errors_used:
+                    logger.warning(f"Frame {frame}, Marker {marker}: No valid reprojection errors")
+                    break
+                
+                # Calculate error statistics
+                mean_error = np.mean(errors_used)
+                std_error = np.std(errors_used)
+                threshold_error = mean_error * error_multiplier_threshold
+                
+                logger.info(f"Frame {frame}, Marker {marker}: Error stats - mean={mean_error:.3f}, std={std_error:.3f}, threshold={threshold_error:.3f}")
+                
+                # Find camera with worst error
+                worst_cam = None
+                worst_error = -1
+                for cam_idx, error in cam_errors_map.items():
+                    if error > worst_error:
+                        worst_error = error
+                        worst_cam = cam_idx
+                
+                logger.info(f"Frame {frame}, Marker {marker}: Worst camera = {worst_cam} with error {worst_error:.3f}")
+                
+                # Check if we should remove the worst camera
+                if worst_error > threshold_error and len(cams_to_use) > minimum_cameras_to_reproject:
+                    # Remove worst camera and continue
+                    cams_to_use.remove(worst_cam)
+                    cameras_removed_total += 1
+                    logger.info(f"Frame {frame}, Marker {marker}: REMOVING camera {worst_cam} (error={worst_error:.3f}, threshold={threshold_error:.3f})")
+                    
+                    # Compare original vs reprojected points for removed camera
+                    reprojected_2d = _get_reprojected_point(anipose_calibration_object, point_3d, worst_cam)
+                    if reprojected_2d is not None:
+                        original_point = original_2d_points[worst_cam]
+                        distance = np.linalg.norm(original_point - reprojected_2d)
+                        logger.info(f"  Camera {worst_cam}: Original 2D = {original_point}, Reprojected 2D = {reprojected_2d}, Distance = {distance:.3f}")
+                    
+                    continue
+                else:
+                    # All cameras are within threshold or we can't remove more
+                    logger.info(f"Frame {frame}, Marker {marker}: All cameras within threshold or minimum reached")
+                    best_point_3d = point_3d
+                    
+                    # Update reprojection errors for all cameras
+                    for cam_idx in range(num_cams):
+                        if cam_idx in cam_errors_map:
+                            best_reprojection_errors[cam_idx] = cam_errors_map[cam_idx]
+                        else:
+                            best_reprojection_errors[cam_idx] = np.nan
+                    break
+            else:
+                # If we reached max iterations, use the last calculated point
+                if not np.any(np.isnan(point_3d)):
+                    logger.info(f"Frame {frame}, Marker {marker}: Using point from max iterations")
+                    best_point_3d = point_3d
+                    for i, cam_idx in enumerate(cams_to_use):
+                        if not np.isnan(reproj_errors[i]):
+                            best_reprojection_errors[cam_idx] = reproj_errors[i]
+
+            # Assign final result
+            filtered_skel3d_frame_marker_xyz[frame, marker, :] = best_point_3d
+            filtered_skel3d_frame_marker_xyz[frame, marker, 2] += 500  # Direct Z modification
+            logger.info(f"Added 500mm to Z coordinate")
+            
+            # Compare with original 3D point
+            original_3d = raw_skel3d_frame_marker_xyz[frame, marker, :]
+            if not np.any(np.isnan(original_3d)) and not np.any(np.isnan(best_point_3d)):
+                distance_3d = np.linalg.norm(original_3d - best_point_3d)
+                logger.info(f"Frame {frame}, Marker {marker}: 3D change - Original: {original_3d}, Filtered: {best_point_3d}, Distance: {distance_3d:.3f}")
+            
+            # Update error arrays
+            if not np.any(np.isnan(best_point_3d)):
+                # Average error for this frame/marker
+                valid_errors = [err for err in best_reprojection_errors if not np.isnan(err)]
+                if valid_errors:
+                    updated_reprojection_error_frame_marker[frame, marker] = np.mean(valid_errors)
+                
+                # Errors per camera
+                for cam_idx in range(num_cams):
+                    if not np.isnan(best_reprojection_errors[cam_idx]):
+                        updated_reprojection_error_camera_frame_marker[cam_idx, frame, marker] = best_reprojection_errors[cam_idx]
+            else:
+                points_filtered += 1
+                logger.warning(f"Frame {frame}, Marker {marker}: Final result is NaN")
+
+    # Log results
+    logger.info(f"Iterative filtering completed:")
+    logger.info(f"  - Processed Points: {points_processed}")
+    logger.info(f"  - Filtered Points (NaN): {points_filtered} ({points_filtered/points_processed*100:.1f}%)")
+    logger.info(f"  - Total cameras removed: {cameras_removed_total}")
+    
+    # NaN statistics after filtering
+    total_nans_after = np.isnan(filtered_skel3d_frame_marker_xyz[:, :, 0]).sum()
+    logger.info(f"  - NaNs after filtering: {total_nans_after} ({(total_nans_after/(num_frames*num_markers))*100:.1f}%)")
+    
+    return (
+        filtered_skel3d_frame_marker_xyz,
+        updated_reprojection_error_frame_marker,
+        updated_reprojection_error_camera_frame_marker,
+    )
+
+
+def _triangulate_single_point_anipose(calibration_object, points_2d_subset, cam_indices):
+    """
+    Triangulates a single point using the Anipose calibration object.
+    points_2d_subset: array of shape (n_cams_used, 2) containing the 2D points
+    cam_indices: list of indices of the cameras used
+    """
+    n_cams_used = len(cam_indices)
+    
+    # Create full array with NaN for all cameras
+    points_2d_full = np.full((len(calibration_object.cameras), 1, 2), np.nan)
+    
+    # Put valid points in their corresponding positions
+    for i, cam_idx in enumerate(cam_indices):
+        points_2d_full[cam_idx, 0, :] = points_2d_subset[i]
+    
+    # Simple triangulation
+    try:
+        point_3d = calibration_object.triangulate(points_2d_full, undistort=True)
+        
+        # Calculate reprojection errors
+        reproj_errors_full = calibration_object.reprojection_error(
+            point_3d.reshape(1, 3), 
+            points_2d_full, 
+            mean=False
+        )
+        
+        # Extract errors only for used cameras
+        reproj_errors = np.full(n_cams_used, np.nan)
+        for i, cam_idx in enumerate(cam_indices):
+            error_vector = reproj_errors_full[cam_idx, 0, :]
+            if not np.any(np.isnan(error_vector)):
+                reproj_errors[i] = np.linalg.norm(error_vector)
+        
+        return point_3d, reproj_errors
+        
+    except Exception as e:
+        logger.debug(f"Triangulation error: {e}")
+        return np.full(3, np.nan), np.full(n_cams_used, np.nan)
+
+
+def _get_reprojected_point(calibration_object, point_3d, camera_index):
+    """
+    Get the reprojected 2D point for a specific camera.
+    """
+    try:
+        # Project 3D point to 2D for the specified camera
+        point_3d_reshaped = point_3d.reshape(1, 1, 3)
+        reprojected = calibration_object.cameras[camera_index].project(point_3d_reshaped)
+        return reprojected.reshape(2)
+    except Exception as e:
+        logger.debug(f"Reprojection error for camera {camera_index}: {e}")
+        return None
