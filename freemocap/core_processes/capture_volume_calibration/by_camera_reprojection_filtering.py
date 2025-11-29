@@ -329,7 +329,7 @@ def filter_by_reprojection_error_iterative(
     logger.info(f"Parameters: minimum_cameras_to_reproject={minimum_cameras_to_reproject}, error_multiplier_threshold={error_multiplier_threshold}, max_iterations={max_iterations}")
 
     # Define problematic frames range for detailed debugging
-    PROBLEMATIC_FRAMES = range(47, 48)
+    PROBLEMATIC_FRAMES = range(51, 52)
     # TARGET_MARKERS = range(0, 75)  # Body and hands
     TARGET_MARKERS = range(27, 28)  # Body
 
@@ -470,8 +470,8 @@ def filter_by_reprojection_error_iterative(
 
             # Assign final result
             filtered_skel3d_frame_marker_xyz[frame, marker, :] = best_point_3d
-            filtered_skel3d_frame_marker_xyz[frame, marker, 2] += 500  # Direct Z modification
-            logger.info(f"Added 500mm to Z coordinate")
+            # filtered_skel3d_frame_marker_xyz[frame, marker, 2] += 500  # Direct Z modification
+            # logger.info(f"Added 500mm to Z coordinate")
             
             # Compare with original 3D point
             original_3d = raw_skel3d_frame_marker_xyz[frame, marker, :]
