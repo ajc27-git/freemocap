@@ -72,6 +72,16 @@ class Actions:
             freemocap_main_window.kill_running_threads_and_processes
         )
 
+        self.set_default_style_action = QAction("Set Default Style", parent=freemocap_main_window)
+        self.set_default_style_action.triggered.connect(
+            lambda: freemocap_main_window._set_up_stylesheet(style="default")
+        )
+
+        self.set_dark_style_action = QAction("Set Dark Style", parent=freemocap_main_window)
+        self.set_dark_style_action.triggered.connect(
+            lambda: freemocap_main_window._set_up_stylesheet(style="dark")
+        )
+
         self.exit_action = QAction("E&xit", parent=freemocap_main_window)
         self.exit_action.setShortcut("Ctrl+Q")
         self.exit_action.triggered.connect(freemocap_main_window.close)

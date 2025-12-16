@@ -30,6 +30,8 @@ class MenuBar(QMenuBar):
         actions_menu = self.addMenu("&Controller")
         actions_menu.addAction(actions.kill_running_threads_and_processes_action)
         actions_menu.addAction(actions.reboot_gui_action)
+        actions_menu.addAction(actions.set_default_style_action)
+        actions_menu.addAction(actions.set_dark_style_action)
 
         # Data Menu
         data_menu = self.addMenu("&Data")

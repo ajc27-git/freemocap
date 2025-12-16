@@ -208,12 +208,12 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.exception(e)
 
-    def _set_up_stylesheet(self):
-        apply_css_style_sheet(self, get_css_stylesheet_path())
+    def _set_up_stylesheet(self, style: str="default"):
+        apply_css_style_sheet(self, get_css_stylesheet_path(style))
         SCSSFileWatcher(
-            path_to_scss_file=get_scss_stylesheet_path(), path_to_css_file=get_css_stylesheet_path(), parent=self
+            path_to_scss_file=get_scss_stylesheet_path(), path_to_css_file=get_css_stylesheet_path(style), parent=self
         )
-        css_file_watcher = CSSFileWatcher(path_to_css_file=get_css_stylesheet_path(), parent=self)
+        css_file_watcher = CSSFileWatcher(path_to_css_file=get_css_stylesheet_path(style), parent=self)
         return css_file_watcher
 
     def _create_new_synchronized_videos_folder(self) -> str:

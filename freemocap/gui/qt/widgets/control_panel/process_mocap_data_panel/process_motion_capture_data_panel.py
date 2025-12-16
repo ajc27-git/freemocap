@@ -30,6 +30,9 @@ from freemocap.gui.qt.workers.process_motion_capture_data_thread_worker import (
     ProcessMotionCaptureDataThreadWorker,
 )
 
+from experimental.face_blendshapes.face_blendshapes import start_face_blendshapes
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,6 +81,16 @@ class ProcessMotionCaptureDataPanel(QWidget):
 
         self._process_motion_capture_data_button.clicked.connect(self._launch_process_motion_capture_data_thread_worker)
         self._layout.addWidget(self._process_motion_capture_data_button)
+
+        # self._realtime_motion_capture_button = QPushButton(
+        #     "Process Face Blendshapes",
+        # )
+        # self._realtime_motion_capture_button.setFont(QFont("Dosis", 16, QFont.Weight.Bold))
+        # self._realtime_motion_capture_button.setStyleSheet("background-color: rgb(144, 210, 109);")
+        # self._realtime_motion_capture_button.setObjectName("realtime_motion_capture_button")
+        # self._realtime_motion_capture_button.clicked.connect(start_face_blendshapes)
+        # self._layout.addWidget(self._realtime_motion_capture_button)
+
 
         self._parameter_tree_widget = ParameterTree(parent=self, showHeader=False)
         self._layout.addWidget(self._parameter_tree_widget)
