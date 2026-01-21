@@ -56,11 +56,36 @@ MEDIAPIPE_TREE_NAME = "Mediapipe"
 
 RUN_IMAGE_TRACKING_NAME = "Run 2d image tracking?"
 
+COLOR_TRACKER_TREE_NAME = "Color Tracker"
+
+RUN_COLOR_TRACKER_NAME = "Run color tracker?"
+
 RUN_3D_TRIANGULATION_NAME = "Run 3d triangulation?"
 
 RUN_BUTTERWORTH_FILTER_NAME = "Run butterworth filter?"
 
 NUMBER_OF_PROCESSES_PARAMETER_NAME = "Max Number of Processes to Use"
+
+# Color Marker 1 constants
+MARKER_1_ENABLED = "Marker 1 - Enabled"
+MARKER_1_COLOR = "Marker 1 - Color"
+MARKER_1_TOLERANCE = "Marker 1 - Color Tolerance (0-100)"
+MARKER_1_MIN_AREA = "Marker 1 - Minimum Area"
+MARKER_1_NAME = "Marker 1 - Name"
+
+# Color Marker 2 constants
+MARKER_2_ENABLED = "Marker 2 - Enabled"
+MARKER_2_COLOR = "Marker 2 - Color"
+MARKER_2_TOLERANCE = "Marker 2 - Color Tolerance (0-100)"
+MARKER_2_MIN_AREA = "Marker 2 - Minimum Area"
+MARKER_2_NAME = "Marker 2 - Name"
+
+# Color Marker 3 constants
+MARKER_3_ENABLED = "Marker 3 - Enabled"
+MARKER_3_COLOR = "Marker 3 - Color"
+MARKER_3_TOLERANCE = "Marker 3 - Color Tolerance (0-100)"
+MARKER_3_MIN_AREA = "Marker 3 - Minimum Area"
+MARKER_3_NAME = "Marker 3 - Name"
 
 
 # TODO: figure out how to generalize this
@@ -146,6 +171,136 @@ def create_mediapipe_parameter_group(
                     "Variable name in `mediapipe` code: `static_image_mode`",
             ),
         ],
+    )
+
+
+def create_color_tracker_parameter_group() -> Parameter:
+    return Parameter.create(
+        name=COLOR_TRACKER_TREE_NAME,
+        type="group",
+        children=[
+            dict(
+                name=RUN_COLOR_TRACKER_NAME,
+                type="bool",
+                value=False,
+                tip="If enabled, track colored markers in addition to MediaPipe skeleton",
+            ),
+            dict(
+                name="Marker 1 Settings",
+                type="group",
+                children=[
+                    dict(
+                        name=MARKER_1_ENABLED,
+                        type="bool",
+                        value=True,
+                        tip="Enable tracking for Marker 1",
+                    ),
+                    dict(
+                        name=MARKER_1_NAME,
+                        type="str",
+                        value="red_marker",
+                        tip="Name for this marker (used in output files)",
+                    ),
+                    dict(
+                        name=MARKER_1_COLOR,
+                        type="color",
+                        value=(255, 0, 0),
+                        tip="Click to pick color for Marker 1",
+                    ),
+                    dict(
+                        name=MARKER_1_TOLERANCE,
+                        type="int",
+                        value=30,
+                        limits=(0, 100),
+                        tip="Color tolerance for matching (higher = more variation allowed)",
+                    ),
+                    dict(
+                        name=MARKER_1_MIN_AREA,
+                        type="int",
+                        value=100,
+                        limits=(10, 10000),
+                        tip="Minimum contour area to consider as valid marker",
+                    ),
+                ],
+            ),
+            dict(
+                name="Marker 2 Settings",
+                type="group",
+                children=[
+                    dict(
+                        name=MARKER_2_ENABLED,
+                        type="bool",
+                        value=True,
+                        tip="Enable tracking for Marker 2",
+                    ),
+                    dict(
+                        name=MARKER_2_NAME,
+                        type="str",
+                        value="green_marker",
+                        tip="Name for this marker (used in output files)",
+                    ),
+                    dict(
+                        name=MARKER_2_COLOR,
+                        type="color",
+                        value=(0, 255, 0),
+                        tip="Click to pick color for Marker 2",
+                    ),
+                    dict(
+                        name=MARKER_2_TOLERANCE,
+                        type="int",
+                        value=25,
+                        limits=(0, 100),
+                        tip="Color tolerance for matching (higher = more variation allowed)",
+                    ),
+                    dict(
+                        name=MARKER_2_MIN_AREA,
+                        type="int",
+                        value=80,
+                        limits=(10, 10000),
+                        tip="Minimum contour area to consider as valid marker",
+                    ),
+                ],
+            ),
+            dict(
+                name="Marker 3 Settings",
+                type="group",
+                children=[
+                    dict(
+                        name=MARKER_3_ENABLED,
+                        type="bool",
+                        value=False,
+                        tip="Enable tracking for Marker 3",
+                    ),
+                    dict(
+                        name=MARKER_3_NAME,
+                        type="str",
+                        value="blue_marker",
+                        tip="Name for this marker (used in output files)",
+                    ),
+                    dict(
+                        name=MARKER_3_COLOR,
+                        type="color",
+                        value=(0, 0, 255),
+                        tip="Click to pick color for Marker 3",
+                    ),
+                    dict(
+                        name=MARKER_3_TOLERANCE,
+                        type="int",
+                        value=30,
+                        limits=(0, 100),
+                        tip="Color tolerance for matching (higher = more variation allowed)",
+                    ),
+                    dict(
+                        name=MARKER_3_MIN_AREA,
+                        type="int",
+                        value=100,
+                        limits=(10, 10000),
+                        tip="Minimum contour area to consider as valid marker",
+                    ),
+                ],
+            ),
+        ],
+        tip="Track colored markers using simple color detection (no model training required)",
     )
 
 
