@@ -1,4 +1,5 @@
 import logging
+from typing import List, Tuple
 
 from pydantic import BaseModel, ConfigDict
 from skellytracker.trackers.base_tracker.base_tracking_params import BaseTrackingParams
@@ -34,10 +35,50 @@ class PostProcessingParametersModel(BaseModel):
     run_butterworth_filter: bool = True
 
 
+class ColorMarkerConfig(BaseModel):
+    """Configuration for a single color marker."""
+    enabled: bool = False
+    target_color_bgr: Tuple[int, int, int] = (0, 0, 255)  # Default: Red in BGR
+    color_tolerance: int = 30
+    marker_name: str = "color_marker"
+    min_contour_area: int = 100
+
+
+class ColorTrackerParametersModel(BaseModel):
+    """Parameters for color-based marker tracking."""
+    run_color_tracking: bool = False
+    marker_configs: List[ColorMarkerConfig] = [
+        ColorMarkerConfig(
+            enabled=True,
+            target_color_bgr=(0, 0, 255),  # Red in BGR
+            color_tolerance=30,
+            marker_name="red_marker",
+            min_contour_area=100,
+        ),
+        ColorMarkerConfig(
+            enabled=True,
+            target_color_bgr=(0, 255, 0),  # Green in BGR
+            color_tolerance=25,
+            marker_name="green_marker",
+            min_contour_area=80,
+        ),
+        ColorMarkerConfig(
+            enabled=False,
+            target_color_bgr=(255, 0, 0),  # Blue in BGR
+            color_tolerance=30,
+            marker_name="blue_marker",
+            min_contour_area=100,
+        ),
+    ]
+    use_morphological_ops: bool = True
+    num_processes: int = 1  # Color tracking is lightweight, usually 1 process is enough
+
+
 class ProcessingParameterModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     recording_info_model: RecordingInfoModel = None
     tracking_parameters_model: BaseTrackingParams = MediapipeTrackingParams()
+    color_tracker_parameters_model: ColorTrackerParametersModel = ColorTrackerParametersModel()
     anipose_triangulate_3d_parameters_model: AniposeTriangulate3DParametersModel = AniposeTriangulate3DParametersModel()
     post_processing_parameters_model: PostProcessingParametersModel = PostProcessingParametersModel()
     tracking_model_info: ModelInfo = MediapipeModelInfo()

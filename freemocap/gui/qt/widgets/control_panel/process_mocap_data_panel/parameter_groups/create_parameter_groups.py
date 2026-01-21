@@ -8,7 +8,11 @@ from freemocap.data_layer.recording_models.post_processing_parameter_models impo
     AniposeTriangulate3DParametersModel,
     PostProcessingParametersModel,
     ButterworthFilterParametersModel,
+    ColorMarkerConfig,
+    ColorTrackerParametersModel,
 )
+
+import logging
 
 BUTTERWORTH_ORDER = "Order"
 
@@ -182,7 +186,7 @@ def create_color_tracker_parameter_group() -> Parameter:
             dict(
                 name=RUN_COLOR_TRACKER_NAME,
                 type="bool",
-                value=False,
+                value=True,
                 tip="If enabled, track colored markers in addition to MediaPipe skeleton",
             ),
             dict(
@@ -210,14 +214,14 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_1_TOLERANCE,
                         type="int",
-                        value=30,
+                        value=40,
                         limits=(0, 100),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
                     dict(
                         name=MARKER_1_MIN_AREA,
                         type="int",
-                        value=100,
+                        value=10,
                         limits=(10, 10000),
                         tip="Minimum contour area to consider as valid marker",
                     ),
@@ -248,14 +252,14 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_2_TOLERANCE,
                         type="int",
-                        value=25,
+                        value=40,
                         limits=(0, 100),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
                     dict(
                         name=MARKER_2_MIN_AREA,
                         type="int",
-                        value=80,
+                        value=10,
                         limits=(10, 10000),
                         tip="Minimum contour area to consider as valid marker",
                     ),
@@ -268,7 +272,7 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_3_ENABLED,
                         type="bool",
-                        value=False,
+                        value=True,
                         tip="Enable tracking for Marker 3",
                     ),
                     dict(
@@ -286,14 +290,14 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_3_TOLERANCE,
                         type="int",
-                        value=30,
+                        value=40,
                         limits=(0, 100),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
                     dict(
                         name=MARKER_3_MIN_AREA,
                         type="int",
-                        value=100,
+                        value=10,
                         limits=(10, 10000),
                         tip="Minimum contour area to consider as valid marker",
                     ),
@@ -393,6 +397,71 @@ def extract_parameter_model_from_parameter_tree(
         parameter_object: Parameter,
 ) -> ProcessingParameterModel:
     parameter_values_dictionary = extract_processing_parameter_model_from_tree(parameter_object=parameter_object)
+    
+    # Extract color tracker parameters
+    marker_configs = []
+    
+    # Helper function to convert color from QColor or tuple to BGR (OpenCV format)
+    def convert_to_bgr(color_value):
+        """Convert color from GUI to BGR for OpenCV."""
+        logger = logging.getLogger(__name__)
+        
+        logger.debug(f"DEBUG COLOR CONVERSION - Input: {color_value}, Type: {type(color_value)}")
+        
+        if hasattr(color_value, 'getRgb'):  # It's a QColor object
+            r, g, b, a = color_value.getRgb()
+            logger.debug(f"DEBUG COLOR CONVERSION - QColor.getRgb(): R={r}, G={g}, B={b}, A={a}")
+        else:  # It's already a tuple
+            if len(color_value) == 4:  # RGBA tuple
+                r, g, b, a = color_value
+            elif len(color_value) == 3:  # RGB tuple
+                r, g, b = color_value
+                a = 255
+            else:
+                r, g, b, a = 255, 0, 0, 255  # Default red
+            logger.debug(f"DEBUG COLOR CONVERSION - Tuple: R={r}, G={g}, B={b}, A={a}")
+        
+        bgr = (b, g, r)
+        logger.debug(f"DEBUG COLOR CONVERSION - Converted to BGR: {bgr}")
+        logger.debug(f"DEBUG COLOR CONVERSION - Expected BGR for:")
+        logger.debug(f"  - Red: (0, 0, 255)")
+        logger.debug(f"  - Green: (0, 255, 0)")
+        logger.debug(f"  - Blue: (255, 0, 0)")
+        
+        return bgr
+    
+    # Marker 1
+    marker_configs.append(
+        ColorMarkerConfig(
+            enabled=parameter_values_dictionary.get(MARKER_1_ENABLED, False),
+            target_color_bgr=convert_to_bgr(parameter_values_dictionary.get(MARKER_1_COLOR, (255, 0, 0, 255))),
+            color_tolerance=parameter_values_dictionary.get(MARKER_1_TOLERANCE, 30),
+            marker_name=parameter_values_dictionary.get(MARKER_1_NAME, "red_marker"),
+            min_contour_area=parameter_values_dictionary.get(MARKER_1_MIN_AREA, 100),
+        )
+    )
+    
+    # Marker 2
+    marker_configs.append(
+        ColorMarkerConfig(
+            enabled=parameter_values_dictionary.get(MARKER_2_ENABLED, False),
+            target_color_bgr=convert_to_bgr(parameter_values_dictionary.get(MARKER_2_COLOR, (0, 255, 0, 255))),
+            color_tolerance=parameter_values_dictionary.get(MARKER_2_TOLERANCE, 25),
+            marker_name=parameter_values_dictionary.get(MARKER_2_NAME, "green_marker"),
+            min_contour_area=parameter_values_dictionary.get(MARKER_2_MIN_AREA, 80),
+        )
+    )
+    
+    # Marker 3
+    marker_configs.append(
+        ColorMarkerConfig(
+            enabled=parameter_values_dictionary.get(MARKER_3_ENABLED, False),
+            target_color_bgr=convert_to_bgr(parameter_values_dictionary.get(MARKER_3_COLOR, (0, 0, 255, 255))),
+            color_tolerance=parameter_values_dictionary.get(MARKER_3_TOLERANCE, 30),
+            marker_name=parameter_values_dictionary.get(MARKER_3_NAME, "blue_marker"),
+            min_contour_area=parameter_values_dictionary.get(MARKER_3_MIN_AREA, 100),
+        )
+    )
 
     return ProcessingParameterModel(
         tracking_parameters_model=MediapipeTrackingParams(
@@ -410,6 +479,12 @@ def extract_parameter_model_from_parameter_tree(
                 parameter_values_dictionary[BOUNDING_BOX_BUFFER_METHOD]
             ),
             bounding_box_buffer_percentage=parameter_values_dictionary[BOUNDING_BOX_BUFFER_PERCENTAGE],
+        ),
+        color_tracker_parameters_model=ColorTrackerParametersModel(
+            run_color_tracking=parameter_values_dictionary.get(RUN_COLOR_TRACKER_NAME, False),
+            marker_configs=marker_configs,
+            use_morphological_ops=True,
+            num_processes=1,
         ),
         anipose_triangulate_3d_parameters_model=AniposeTriangulate3DParametersModel(
             run_reprojection_error_filtering=parameter_values_dictionary[RUN_REPROJECTION_ERROR_FILTERING],

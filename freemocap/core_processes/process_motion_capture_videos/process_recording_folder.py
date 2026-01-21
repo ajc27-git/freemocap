@@ -12,11 +12,17 @@ from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_
 from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.image_tracking_pipeline_functions import (
     run_image_tracking_pipeline,
 )
+from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.color_tracking_pipeline_functions import (
+    run_color_tracking_pipeline,
+)
 from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.pipeline_check import (
     processing_pipeline_check,
 )
 from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.triangulation_pipeline_functions import (
     get_triangulated_data,
+)
+from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.color_marker_triangulation_functions import (
+    get_color_markers_triangulated_data,
 )
 from freemocap.data_layer.data_saver.data_saver import DataSaver
 from freemocap.data_layer.recording_models.post_processing_parameter_models import ProcessingParameterModel
@@ -83,6 +89,19 @@ def process_recording_folder(
         if logging_queue:
             logging_queue.put(exception)
         raise exception
+    
+    try:
+        color_markers_2d_data = run_color_tracking_pipeline(
+            processing_parameters=recording_processing_parameter_model,
+            kill_event=kill_event,
+            queue=logging_queue,
+            use_tqdm=use_tqdm,
+        )
+    except (RuntimeError, ValueError) as e:
+        logger.warning(f"Color tracking failed or was skipped: {e}")
+        if logging_queue:
+            logging_queue.put(e)
+        color_markers_2d_data = None
 
     try:
         raw_skel3d_frame_marker_xyz = get_triangulated_data(
@@ -102,6 +121,19 @@ def process_recording_folder(
         if logging_queue:
             logging_queue.put(exception)
         raise exception
+    
+    try:
+        color_markers_3d_data = get_color_markers_triangulated_data(
+            color_markers_2d_data=color_markers_2d_data,
+            processing_parameters=recording_processing_parameter_model,
+            kill_event=kill_event,
+            queue=logging_queue,
+        )
+    except (RuntimeError, ValueError) as e:
+        logger.warning(f"Color markers triangulation failed or was skipped: {e}")
+        if logging_queue:
+            logging_queue.put(e)
+        color_markers_3d_data = None
 
     try:
         # TODO: find out if skellyforge does all the error handling we need - if not add it to post_process_data

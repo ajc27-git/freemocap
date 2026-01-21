@@ -47,6 +47,10 @@ OLD_SEGMENT_CENTER_OF_MASS_NPY_FILE_NAME = "segmentCOM_frame_joint_xyz.npy"
 
 RECORDING_PARAMETERS_JSON_FILE_NAME = "recording_parameters.json"
 
+COLOR_MARKERS_2D_NPY_FILE_NAME = "color_markers_2d.npy"
+COLOR_MARKERS_3D_NPY_FILE_NAME = "color_markers_3d.npy"
+COLOR_MARKERS_BLENDER_FILE_NAME = "color_markers_blender.csv"
+
 # Figshare info
 FIGSHARE_SAMPLE_ZIP_FILE_URL = "https://figshare.com/ndownloader/files/53681960"
 FIGSHARE_TEST_ZIP_FILE_URL = "https://figshare.com/ndownloader/files/53682050"
