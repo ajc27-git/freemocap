@@ -39,7 +39,9 @@ class ColorMarkerConfig(BaseModel):
     """Configuration for a single color marker."""
     enabled: bool = False
     target_color_bgr: Tuple[int, int, int] = (0, 0, 255)  # Default: Red in BGR
-    color_tolerance: int = 30
+    hue_tolerance: int = 20
+    saturation_tolerance: int = 70
+    value_tolerance: int = 70
     marker_name: str = "color_marker"
     min_contour_area: int = 100
 
@@ -51,21 +53,27 @@ class ColorTrackerParametersModel(BaseModel):
         ColorMarkerConfig(
             enabled=True,
             target_color_bgr=(0, 0, 255),  # Red in BGR
-            color_tolerance=30,
+            hue_tolerance=20,
+            saturation_tolerance=70,
+            value_tolerance=70,
             marker_name="red_marker",
             min_contour_area=100,
         ),
         ColorMarkerConfig(
             enabled=True,
             target_color_bgr=(0, 255, 0),  # Green in BGR
-            color_tolerance=25,
+            hue_tolerance=20,
+            saturation_tolerance=70,
+            value_tolerance=70,
             marker_name="green_marker",
-            min_contour_area=80,
+            min_contour_area=100,
         ),
         ColorMarkerConfig(
             enabled=False,
             target_color_bgr=(255, 0, 0),  # Blue in BGR
-            color_tolerance=30,
+            hue_tolerance=20,
+            saturation_tolerance=70,
+            value_tolerance=70,
             marker_name="blue_marker",
             min_contour_area=100,
         ),

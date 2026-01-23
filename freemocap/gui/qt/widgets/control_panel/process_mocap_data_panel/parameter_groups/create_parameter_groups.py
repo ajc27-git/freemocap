@@ -73,21 +73,27 @@ NUMBER_OF_PROCESSES_PARAMETER_NAME = "Max Number of Processes to Use"
 # Color Marker 1 constants
 MARKER_1_ENABLED = "Marker 1 - Enabled"
 MARKER_1_COLOR = "Marker 1 - Color"
-MARKER_1_TOLERANCE = "Marker 1 - Color Tolerance (0-100)"
+MARKER_1_HUE_TOLERANCE = "Marker 1 - Hue Tolerance (0-179)"
+MARKER_1_SATURATION_TOLERANCE = "Marker 1 - Saturation Tolerance (0-255)"
+MARKER_1_VALUE_TOLERANCE = "Marker 1 - Value Tolerance (0-255)"
 MARKER_1_MIN_AREA = "Marker 1 - Minimum Area"
 MARKER_1_NAME = "Marker 1 - Name"
 
 # Color Marker 2 constants
 MARKER_2_ENABLED = "Marker 2 - Enabled"
 MARKER_2_COLOR = "Marker 2 - Color"
-MARKER_2_TOLERANCE = "Marker 2 - Color Tolerance (0-100)"
+MARKER_2_HUE_TOLERANCE = "Marker 2 - Hue Tolerance (0-179)"
+MARKER_2_SATURATION_TOLERANCE = "Marker 2 - Saturation Tolerance (0-255)"
+MARKER_2_VALUE_TOLERANCE = "Marker 2 - Value Tolerance (0-255)"
 MARKER_2_MIN_AREA = "Marker 2 - Minimum Area"
 MARKER_2_NAME = "Marker 2 - Name"
 
 # Color Marker 3 constants
 MARKER_3_ENABLED = "Marker 3 - Enabled"
 MARKER_3_COLOR = "Marker 3 - Color"
-MARKER_3_TOLERANCE = "Marker 3 - Color Tolerance (0-100)"
+MARKER_3_HUE_TOLERANCE = "Marker 3 - Hue Tolerance (0-179)"
+MARKER_3_SATURATION_TOLERANCE = "Marker 3 - Saturation Tolerance (0-255)"
+MARKER_3_VALUE_TOLERANCE = "Marker 3 - Value Tolerance (0-255)"
 MARKER_3_MIN_AREA = "Marker 3 - Minimum Area"
 MARKER_3_NAME = "Marker 3 - Name"
 
@@ -212,10 +218,24 @@ def create_color_tracker_parameter_group() -> Parameter:
                         tip="Click to pick color for Marker 1",
                     ),
                     dict(
-                        name=MARKER_1_TOLERANCE,
+                        name=MARKER_1_HUE_TOLERANCE,
                         type="int",
-                        value=40,
-                        limits=(0, 100),
+                        value=20,
+                        limits=(0, 179),
+                        tip="Hue tolerance for matching (0-179)",
+                    ),
+                    dict(
+                        name=MARKER_1_SATURATION_TOLERANCE,
+                        type="int",
+                        value=70,
+                        limits=(0, 255),
+                        tip="Saturation tolerance for matching (0-255)",
+                    ),
+                    dict(
+                        name=MARKER_1_VALUE_TOLERANCE,
+                        type="int",
+                        value=70,
+                        limits=(0, 255),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
                     dict(
@@ -250,10 +270,24 @@ def create_color_tracker_parameter_group() -> Parameter:
                         tip="Click to pick color for Marker 2",
                     ),
                     dict(
-                        name=MARKER_2_TOLERANCE,
+                        name=MARKER_2_HUE_TOLERANCE,
                         type="int",
-                        value=40,
-                        limits=(0, 100),
+                        value=20,
+                        limits=(0, 179),
+                        tip="Hue tolerance for matching (0-179)",
+                    ),
+                    dict(
+                        name=MARKER_2_SATURATION_TOLERANCE,
+                        type="int",
+                        value=70,
+                        limits=(0, 255),
+                        tip="Saturation tolerance for matching (0-255)",
+                    ),
+                    dict(
+                        name=MARKER_2_VALUE_TOLERANCE,
+                        type="int",
+                        value=70,
+                        limits=(0, 255),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
                     dict(
@@ -288,10 +322,24 @@ def create_color_tracker_parameter_group() -> Parameter:
                         tip="Click to pick color for Marker 3",
                     ),
                     dict(
-                        name=MARKER_3_TOLERANCE,
+                        name=MARKER_3_HUE_TOLERANCE,
                         type="int",
-                        value=40,
-                        limits=(0, 100),
+                        value=20,
+                        limits=(0, 179),
+                        tip="Hue tolerance for matching (0-179)",
+                    ),
+                    dict(
+                        name=MARKER_3_SATURATION_TOLERANCE,
+                        type="int",
+                        value=70,
+                        limits=(0, 255),
+                        tip="Saturation tolerance for matching (0-255)",
+                    ),
+                    dict(
+                        name=MARKER_3_VALUE_TOLERANCE,
+                        type="int",
+                        value=70,
+                        limits=(0, 255),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
                     dict(
@@ -435,7 +483,9 @@ def extract_parameter_model_from_parameter_tree(
         ColorMarkerConfig(
             enabled=parameter_values_dictionary.get(MARKER_1_ENABLED, False),
             target_color_bgr=convert_to_bgr(parameter_values_dictionary.get(MARKER_1_COLOR, (255, 0, 0, 255))),
-            color_tolerance=parameter_values_dictionary.get(MARKER_1_TOLERANCE, 30),
+            hue_tolerance=parameter_values_dictionary.get(MARKER_1_HUE_TOLERANCE, 20),
+            saturation_tolerance=parameter_values_dictionary.get(MARKER_1_SATURATION_TOLERANCE, 70),
+            value_tolerance=parameter_values_dictionary.get(MARKER_1_VALUE_TOLERANCE, 70),
             marker_name=parameter_values_dictionary.get(MARKER_1_NAME, "red_marker"),
             min_contour_area=parameter_values_dictionary.get(MARKER_1_MIN_AREA, 100),
         )
@@ -446,7 +496,9 @@ def extract_parameter_model_from_parameter_tree(
         ColorMarkerConfig(
             enabled=parameter_values_dictionary.get(MARKER_2_ENABLED, False),
             target_color_bgr=convert_to_bgr(parameter_values_dictionary.get(MARKER_2_COLOR, (0, 255, 0, 255))),
-            color_tolerance=parameter_values_dictionary.get(MARKER_2_TOLERANCE, 25),
+            hue_tolerance=parameter_values_dictionary.get(MARKER_2_HUE_TOLERANCE, 20),
+            saturation_tolerance=parameter_values_dictionary.get(MARKER_2_SATURATION_TOLERANCE, 70),
+            value_tolerance=parameter_values_dictionary.get(MARKER_2_VALUE_TOLERANCE, 70),
             marker_name=parameter_values_dictionary.get(MARKER_2_NAME, "green_marker"),
             min_contour_area=parameter_values_dictionary.get(MARKER_2_MIN_AREA, 80),
         )
@@ -457,7 +509,9 @@ def extract_parameter_model_from_parameter_tree(
         ColorMarkerConfig(
             enabled=parameter_values_dictionary.get(MARKER_3_ENABLED, False),
             target_color_bgr=convert_to_bgr(parameter_values_dictionary.get(MARKER_3_COLOR, (0, 0, 255, 255))),
-            color_tolerance=parameter_values_dictionary.get(MARKER_3_TOLERANCE, 30),
+            hue_tolerance=parameter_values_dictionary.get(MARKER_3_HUE_TOLERANCE, 20),
+            saturation_tolerance=parameter_values_dictionary.get(MARKER_3_SATURATION_TOLERANCE, 70),
+            value_tolerance=parameter_values_dictionary.get(MARKER_3_VALUE_TOLERANCE, 70),
             marker_name=parameter_values_dictionary.get(MARKER_3_NAME, "blue_marker"),
             min_contour_area=parameter_values_dictionary.get(MARKER_3_MIN_AREA, 100),
         )
