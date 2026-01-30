@@ -64,6 +64,9 @@ COLOR_TRACKER_TREE_NAME = "Color Tracker"
 
 RUN_COLOR_TRACKER_NAME = "Run color tracker?"
 
+MIN_CIRCULARITY_NAME = "Minimum Circularity"
+MIN_SOLIDITY_NAME = "Minimum Solidity"
+
 RUN_3D_TRIANGULATION_NAME = "Run 3d triangulation?"
 
 RUN_BUTTERWORTH_FILTER_NAME = "Run butterworth filter?"
@@ -188,12 +191,29 @@ def create_color_tracker_parameter_group() -> Parameter:
     return Parameter.create(
         name=COLOR_TRACKER_TREE_NAME,
         type="group",
+        expanded=False,
         children=[
             dict(
                 name=RUN_COLOR_TRACKER_NAME,
                 type="bool",
-                value=True,
+                value=False,
                 tip="If enabled, track colored markers in addition to MediaPipe skeleton",
+            ),
+            dict(
+                name=MIN_CIRCULARITY_NAME,
+                type="float",
+                value=0.5,
+                limits=(0.0, 1.0),
+                step=0.05,
+                tip="Minimum circularity (0.0-1.0). Higher values require shapes closer to perfect circles.",
+            ),
+            dict(
+                name=MIN_SOLIDITY_NAME,
+                type="float",
+                value=0.5,
+                limits=(0.0, 1.0),
+                step=0.05,
+                tip="Minimum solidity (0.0-1.0). Higher values require solid convex shapes (no concavities).",
             ),
             dict(
                 name="Marker 1 Settings",
@@ -214,27 +234,27 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_1_COLOR,
                         type="color",
-                        value=(255, 0, 0),
+                        value=(110, 11, 19),
                         tip="Click to pick color for Marker 1",
                     ),
                     dict(
                         name=MARKER_1_HUE_TOLERANCE,
                         type="int",
-                        value=20,
+                        value=10,
                         limits=(0, 179),
                         tip="Hue tolerance for matching (0-179)",
                     ),
                     dict(
                         name=MARKER_1_SATURATION_TOLERANCE,
                         type="int",
-                        value=70,
+                        value=50,
                         limits=(0, 255),
                         tip="Saturation tolerance for matching (0-255)",
                     ),
                     dict(
                         name=MARKER_1_VALUE_TOLERANCE,
                         type="int",
-                        value=70,
+                        value=50,
                         limits=(0, 255),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
@@ -266,27 +286,27 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_2_COLOR,
                         type="color",
-                        value=(0, 255, 0),
+                        value=(30, 80, 84),
                         tip="Click to pick color for Marker 2",
                     ),
                     dict(
                         name=MARKER_2_HUE_TOLERANCE,
                         type="int",
-                        value=20,
+                        value=10,
                         limits=(0, 179),
                         tip="Hue tolerance for matching (0-179)",
                     ),
                     dict(
                         name=MARKER_2_SATURATION_TOLERANCE,
                         type="int",
-                        value=70,
+                        value=50,
                         limits=(0, 255),
                         tip="Saturation tolerance for matching (0-255)",
                     ),
                     dict(
                         name=MARKER_2_VALUE_TOLERANCE,
                         type="int",
-                        value=70,
+                        value=50,
                         limits=(0, 255),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
@@ -318,27 +338,27 @@ def create_color_tracker_parameter_group() -> Parameter:
                     dict(
                         name=MARKER_3_COLOR,
                         type="color",
-                        value=(0, 0, 255),
+                        value=(30, 52, 112),
                         tip="Click to pick color for Marker 3",
                     ),
                     dict(
                         name=MARKER_3_HUE_TOLERANCE,
                         type="int",
-                        value=20,
+                        value=10,
                         limits=(0, 179),
                         tip="Hue tolerance for matching (0-179)",
                     ),
                     dict(
                         name=MARKER_3_SATURATION_TOLERANCE,
                         type="int",
-                        value=70,
+                        value=50,
                         limits=(0, 255),
                         tip="Saturation tolerance for matching (0-255)",
                     ),
                     dict(
                         name=MARKER_3_VALUE_TOLERANCE,
                         type="int",
-                        value=70,
+                        value=50,
                         limits=(0, 255),
                         tip="Color tolerance for matching (higher = more variation allowed)",
                     ),
@@ -539,6 +559,8 @@ def extract_parameter_model_from_parameter_tree(
             marker_configs=marker_configs,
             use_morphological_ops=True,
             num_processes=1,
+            min_circularity=parameter_values_dictionary.get(MIN_CIRCULARITY_NAME, 0.5),
+            min_solidity=parameter_values_dictionary.get(MIN_SOLIDITY_NAME, 0.5),
         ),
         anipose_triangulate_3d_parameters_model=AniposeTriangulate3DParametersModel(
             run_reprojection_error_filtering=parameter_values_dictionary[RUN_REPROJECTION_ERROR_FILTERING],
