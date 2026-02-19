@@ -62,6 +62,11 @@ RUN_BUTTERWORTH_FILTER_NAME = "Run butterworth filter?"
 
 NUMBER_OF_PROCESSES_PARAMETER_NAME = "Max Number of Processes to Use"
 
+YOLO_OBJECT_TRACKER_TREE_NAME = "YOLO Object Tracker"
+
+RUN_YOLO_OBJECT_TRACKER_NAME = "Run YOLO object tracker?"
+
+YOLO_OBJECT_CUSTOM_MODEL_PATH = "Custom Model Path"
 
 # TODO: figure out how to generalize this
 def create_mediapipe_parameter_group(
@@ -144,6 +149,27 @@ def create_mediapipe_parameter_group(
                 tip="If true, the model will process each image independently, without tracking across frames."
                     "I think this is equivalent to setting `min_tracking_confidence` to 0.0"
                     "Variable name in `mediapipe` code: `static_image_mode`",
+            ),
+        ],
+    )
+
+
+def create_yolo_object_tracker_parameter_group() -> Parameter:
+    return Parameter.create(
+        name=YOLO_OBJECT_TRACKER_TREE_NAME,
+        type="group",
+        children=[
+            dict(
+                name=RUN_YOLO_OBJECT_TRACKER_NAME,
+                type="bool",
+                value=False,
+                tip="If enabled, track the classes defined in the YOLO model.",
+            ),
+            dict(
+                name=YOLO_OBJECT_CUSTOM_MODEL_PATH,
+                type="str",
+                value="",
+                tip="Path to a custom trained YOLO model (e.g., best.pt).",
             ),
         ],
     )
