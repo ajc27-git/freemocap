@@ -17,6 +17,9 @@ ANNOTATED_VIDEOS_FOLDER_NAME = "annotated_videos"
 RAW_DATA_FOLDER_NAME = "raw_data"
 CENTER_OF_MASS_FOLDER_NAME = "center_of_mass"
 
+YOLO_OBJECT_TRACKING_FOLDER_NAME = "yolo_object_tracking"
+
+
 # file names
 MOST_RECENT_RECORDING_TOML_FILENAME = "most_recent_recording.toml"
 LAST_SUCCESSFUL_CALIBRATION_TOML_FILENAME = "last_successful_calibration.toml"
@@ -46,6 +49,9 @@ OLD_TOTAL_BODY_CENTER_OF_MASS_NPY_FILE_NAME = "total_body_center_of_mass_xyz.npy
 OLD_SEGMENT_CENTER_OF_MASS_NPY_FILE_NAME = "segmentCOM_frame_joint_xyz.npy"
 
 RECORDING_PARAMETERS_JSON_FILE_NAME = "recording_parameters.json"
+
+YOLO_OBJECT_MARKERS_2D_NPY_FILE_NAME = "yolo_object_markers_2d.npy"
+YOLO_OBJECT_MARKERS_3D_NPY_FILE_NAME = "yolo_object_markers_3d.npy"
 
 # Figshare info
 FIGSHARE_SAMPLE_ZIP_FILE_URL = "https://figshare.com/ndownloader/files/53681960"

@@ -1,4 +1,7 @@
-from pyqtgraph.parametertree import Parameter
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QPushButton, QWidget
+from pyqtgraph.parametertree import Parameter, registerParameterType
+from pyqtgraph.parametertree.parameterTypes import SimpleParameter, WidgetParameterItem
 from skellytracker.trackers.mediapipe_tracker.mediapipe_model_info import (
     MediapipeTrackingParams,
 )
@@ -8,6 +11,7 @@ from freemocap.data_layer.recording_models.post_processing_parameter_models impo
     AniposeTriangulate3DParametersModel,
     PostProcessingParametersModel,
     ButterworthFilterParametersModel,
+    YoloObjectTrackerParametersModel,
 )
 
 BUTTERWORTH_ORDER = "Order"
@@ -67,6 +71,66 @@ YOLO_OBJECT_TRACKER_TREE_NAME = "YOLO Object Tracker"
 RUN_YOLO_OBJECT_TRACKER_NAME = "Run YOLO object tracker?"
 
 YOLO_OBJECT_CUSTOM_MODEL_PATH = "Custom Model Path"
+
+
+class FileWidget(QWidget):
+    sigChanged = Signal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(2)
+        self.setLayout(self.layout)
+
+        self.line_edit = QLineEdit()
+        self.line_edit.setPlaceholderText("Click '...' to load model file")
+        self.line_edit.setStyleSheet("QLineEdit { border: 1px solid gray; color: black; background-color: white; }")
+        self.layout.addWidget(self.line_edit)
+
+        self.button = QPushButton("...")
+        self.button.setStyleSheet("QPushButton { color: black; border: 1px solid gray; background-color: #f0f0f0; }")
+        self.button.setFixedWidth(30)
+        self.layout.addWidget(self.button)
+
+        self.button.setFixedWidth(24)  # slightly smaller looks better
+        self.button.setFixedHeight(self.line_edit.minimumSizeHint().height())
+
+
+    def value(self):
+        return self.line_edit.text()
+
+    def setValue(self, value):
+        self.line_edit.setText(str(value))
+
+
+class FileParameterItem(WidgetParameterItem):
+    def __init__(self, param, depth):
+        super().__init__(param, depth)
+        self.hideWidget = False  # <-- THIS is the key line
+
+    def makeWidget(self):
+        w = FileWidget()
+        w.line_edit.textChanged.connect(self.param.setValue)
+        w.button.clicked.connect(self.select_file)
+        return w
+
+    def select_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Select File",
+            "",
+            "YOLO Models (*.pt);;All Files (*)",
+        )
+        if file_path:
+            self.param.setValue(file_path)
+
+
+class FileParameter(Parameter):
+    itemClass = FileParameterItem
+
+
+registerParameterType('file', FileParameter, override=True)
 
 # TODO: figure out how to generalize this
 def create_mediapipe_parameter_group(
@@ -167,7 +231,7 @@ def create_yolo_object_tracker_parameter_group() -> Parameter:
             ),
             dict(
                 name=YOLO_OBJECT_CUSTOM_MODEL_PATH,
-                type="str",
+                type="file",
                 value="",
                 tip="Path to a custom trained YOLO model (e.g., best.pt).",
             ),
@@ -281,6 +345,10 @@ def extract_parameter_model_from_parameter_tree(
                 parameter_values_dictionary[BOUNDING_BOX_BUFFER_METHOD]
             ),
             bounding_box_buffer_percentage=parameter_values_dictionary[BOUNDING_BOX_BUFFER_PERCENTAGE],
+        ),
+        yolo_object_tracker_parameters_model=YoloObjectTrackerParametersModel(
+            run_yolo_object_tracker=parameter_values_dictionary[RUN_YOLO_OBJECT_TRACKER_NAME],
+            custom_model_path=parameter_values_dictionary.get(YOLO_OBJECT_CUSTOM_MODEL_PATH),
         ),
         anipose_triangulate_3d_parameters_model=AniposeTriangulate3DParametersModel(
             run_reprojection_error_filtering=parameter_values_dictionary[RUN_REPROJECTION_ERROR_FILTERING],

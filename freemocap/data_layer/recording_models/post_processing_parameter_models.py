@@ -34,10 +34,16 @@ class PostProcessingParametersModel(BaseModel):
     run_butterworth_filter: bool = True
 
 
+class YoloObjectTrackerParametersModel(BaseModel):
+    run_yolo_object_tracker: bool = False
+    custom_model_path: str = ""
+
+
 class ProcessingParameterModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     recording_info_model: RecordingInfoModel = None
     tracking_parameters_model: BaseTrackingParams = MediapipeTrackingParams()
+    yolo_object_tracker_parameters_model: YoloObjectTrackerParametersModel = YoloObjectTrackerParametersModel()
     anipose_triangulate_3d_parameters_model: AniposeTriangulate3DParametersModel = AniposeTriangulate3DParametersModel()
     post_processing_parameters_model: PostProcessingParametersModel = PostProcessingParametersModel()
     tracking_model_info: ModelInfo = MediapipeModelInfo()
