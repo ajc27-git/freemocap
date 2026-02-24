@@ -72,6 +72,12 @@ RUN_YOLO_OBJECT_TRACKER_NAME = "Run YOLO object tracker?"
 
 YOLO_OBJECT_CUSTOM_MODEL_PATH = "Custom Model Path"
 
+YOLO_OBJECT_MODEL_SIZE = "YOLO Model Size"
+
+YOLO_OBJECT_CONFIDENCE_THRESHOLD = "Confidence Threshold"
+
+YOLO_OBJECT_FILL_GAPS = "Fill gaps in 3D tracks"
+
 
 class FileWidget(QWidget):
     sigChanged = Signal(object)
@@ -219,6 +225,7 @@ def create_mediapipe_parameter_group(
 
 
 def create_yolo_object_tracker_parameter_group() -> Parameter:
+    yolo_model_size_list = ["nano", "small", "medium", "large", "extra_large", "high_res"]
     return Parameter.create(
         name=YOLO_OBJECT_TRACKER_TREE_NAME,
         type="group",
@@ -228,6 +235,27 @@ def create_yolo_object_tracker_parameter_group() -> Parameter:
                 type="bool",
                 value=False,
                 tip="If enabled, track the classes defined in the YOLO model.",
+            ),
+            dict(
+                name=YOLO_OBJECT_MODEL_SIZE,
+                type="list",
+                limits=yolo_model_size_list,
+                value="small",
+                tip="Size of pretrained YOLO model to use.",
+            ),
+            dict(
+                name=YOLO_OBJECT_CONFIDENCE_THRESHOLD,
+                type="float",
+                value=0.5,
+                step=0.05,
+                limits=(0.0, 1.0),
+                tip="Minimum confidence for a detected object to be valid.",
+            ),
+            dict(
+                name=YOLO_OBJECT_FILL_GAPS,
+                type="bool",
+                value=True,
+                tip="If true, fill data gaps utilizing cubic spline interpolation for missing YOLO tracking frames.",
             ),
             dict(
                 name=YOLO_OBJECT_CUSTOM_MODEL_PATH,
@@ -349,6 +377,9 @@ def extract_parameter_model_from_parameter_tree(
         yolo_object_tracker_parameters_model=YoloObjectTrackerParametersModel(
             run_yolo_object_tracker=parameter_values_dictionary[RUN_YOLO_OBJECT_TRACKER_NAME],
             custom_model_path=parameter_values_dictionary.get(YOLO_OBJECT_CUSTOM_MODEL_PATH),
+            model_size=parameter_values_dictionary.get(YOLO_OBJECT_MODEL_SIZE, "small"),
+            confidence_threshold=parameter_values_dictionary.get(YOLO_OBJECT_CONFIDENCE_THRESHOLD, 0.5),
+            fill_gaps=parameter_values_dictionary.get(YOLO_OBJECT_FILL_GAPS, True),
         ),
         anipose_triangulate_3d_parameters_model=AniposeTriangulate3DParametersModel(
             run_reprojection_error_filtering=parameter_values_dictionary[RUN_REPROJECTION_ERROR_FILTERING],

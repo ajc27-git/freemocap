@@ -3,6 +3,7 @@ import multiprocessing
 from pathlib import Path
 from typing import Optional
 import numpy as np
+import pandas as pd
 
 from freemocap.core_processes.capture_volume_calibration.anipose_camera_calibration.get_anipose_calibration_object import (
     load_anipose_calibration_toml_from_path,
@@ -101,6 +102,11 @@ def get_yolo_objects_triangulated_data(
             kill_event=kill_event,
         )
         
+        # Fill missing frames
+        if processing_parameters.yolo_object_tracker_parameters_model.fill_gaps:
+            logger.info("Filling missing frames in 3D data...")
+            yolo_objects_3d_data = fill_yolo_objects_3d_gaps(yolo_objects_3d_data)
+        
         # Save 3D data
         save_yolo_objects_3d_data(
             yolo_objects_3d_data=yolo_objects_3d_data,
@@ -172,6 +178,42 @@ def process_single_camera_yolo_objects_data(
     )
     
     return yolo_objects_3d_data, reprojection_error_fr_mar
+
+
+def fill_yolo_objects_3d_gaps(yolo_objects_3d_data: np.ndarray) -> np.ndarray:
+    """
+    Fill gaps (NaNs) in 3D YOLO tracking data.
+    Uses 'pchip' interpolation (shape-preserving cubic spline) to maintain movement physics.
+    Falls back to linear if pchip fails (e.g. not enough data points).
+    
+    Args:
+        yolo_objects_3d_data: Array of shape [num_frames, num_objects, 6]
+            (x, y, z, confidence, class_id, reprojection_error)
+            
+    Returns:
+        Gap-filled array of the same shape.
+    """
+    out_data = yolo_objects_3d_data.copy()
+    num_objects = out_data.shape[1]
+    
+    for obj_idx in range(num_objects):
+        coords = out_data[:, obj_idx, :3]
+        df = pd.DataFrame(coords)
+        
+        # Skip if completely empty or no NaNs to fill
+        if df.isna().all().all() or not df.isna().any().any():
+            continue
+            
+        try:
+            # pchip is a shape-preserving cubic spline, good for physics/movement
+            df_filled = df.interpolate(method='pchip', limit_direction='both')
+        except Exception as e:
+            logger.warning(f"Failed to use 'pchip' interpolation for object {obj_idx}, falling back to 'linear': {e}")
+            df_filled = df.interpolate(method='linear', limit_direction='both')
+            
+        out_data[:, obj_idx, :3] = df_filled.values
+        
+    return out_data
 
 
 def save_yolo_objects_3d_data(

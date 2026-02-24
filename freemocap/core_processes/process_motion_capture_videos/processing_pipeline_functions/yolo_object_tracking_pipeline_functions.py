@@ -48,9 +48,9 @@ def run_yolo_object_tracking_pipeline(
     # Create YOLO object tracker model info instance
     yolo_object_model_info = YOLOObjectModelInfo(
         model_path=processing_parameters.yolo_object_tracker_parameters_model.custom_model_path,
-        # model_size=processing_parameters.yolo_object_tracker_parameters_model.model_size,
+        model_size=processing_parameters.yolo_object_tracker_parameters_model.model_size,
         # person_only=processing_parameters.yolo_object_tracker_parameters_model.person_only,
-        # confidence_threshold=processing_parameters.yolo_object_tracker_parameters_model.confidence_threshold,
+        confidence_threshold=processing_parameters.yolo_object_tracker_parameters_model.confidence_threshold,
         # classes_to_track=processing_parameters.yolo_object_tracker_parameters_model.classes_to_track,
         # max_detections=processing_parameters.yolo_object_tracker_parameters_model.max_detections,
     )
@@ -102,18 +102,18 @@ def run_yolo_object_tracking(
     """
     # Extract parameters from model_info
     model_path = model_info.model_path
-    # model_size = model_info.model_size
+    model_size = model_info.model_size
     # person_only = model_info.person_only
-    # confidence_threshold = model_info.confidence_threshold
+    confidence_threshold = model_info.confidence_threshold
     # classes_to_track = model_info.classes_to_track
     # max_detections = model_info.max_detections
     
     # Create YOLO object tracker instance
     yolo_object_tracker = YOLOObjectTracker(
         model_path=model_path,
-        # model_size=model_size,
+        model_size=model_size,
         # person_only=person_only,
-        # confidence_threshold=confidence_threshold,
+        confidence_threshold=confidence_threshold,
         # classes_to_track=classes_to_track,
         # max_detections=max_detections,
     )
@@ -148,7 +148,7 @@ if __name__ == "__main__":
                 person_only=False,
                 confidence_threshold=0.5,
                 classes_to_track=None,
-                max_detections=10,
+                max_detections=1,
                 num_processes=4,
             )
             self.recording_info_model = type('obj', (object,), {

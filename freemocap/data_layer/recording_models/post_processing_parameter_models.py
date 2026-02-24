@@ -37,6 +37,9 @@ class PostProcessingParametersModel(BaseModel):
 class YoloObjectTrackerParametersModel(BaseModel):
     run_yolo_object_tracker: bool = False
     custom_model_path: str = ""
+    model_size: str = "small"
+    confidence_threshold: float = 0.5
+    fill_gaps: bool = True
 
 
 class ProcessingParameterModel(BaseModel):
