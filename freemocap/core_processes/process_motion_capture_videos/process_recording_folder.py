@@ -9,6 +9,9 @@ from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_
 from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.data_saving_pipeline_functions import (
     save_data,
 )
+from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.face_blendshapes_pipeline_functions import (
+    run_face_blendshapes_pipeline,
+)
 from freemocap.core_processes.process_motion_capture_videos.processing_pipeline_functions.image_tracking_pipeline_functions import (
     run_image_tracking_pipeline,
 )
@@ -139,6 +142,24 @@ def process_recording_folder(
         if logging_queue:
             logging_queue.put(exception)
         raise exception
+
+    if recording_processing_parameter_model.face_blendshapes_parameters_model.run_face_blendshapes_tracker:
+        try:
+            run_face_blendshapes_pipeline(
+                processing_parameters=recording_processing_parameter_model,
+                queue=logging_queue,
+            )
+        except Exception as e:
+            logger.error(f"Face blendshapes calculation failed processing: {e}")
+            if logging_queue:
+                logging_queue.put(e)
+            raise e
+
+        if kill_event is not None and kill_event.is_set():
+            exception = KillEventException("Process was killed")
+            if logging_queue:
+                logging_queue.put(exception)
+            raise exception
 
     # TODO: deprecate save_data function in favor of DataSaver
     save_data(

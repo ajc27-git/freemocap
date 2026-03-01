@@ -8,6 +8,7 @@ from freemocap.data_layer.recording_models.post_processing_parameter_models impo
     AniposeTriangulate3DParametersModel,
     PostProcessingParametersModel,
     ButterworthFilterParametersModel,
+    FaceBlendshapesParametersModel,
 )
 
 BUTTERWORTH_ORDER = "Order"
@@ -61,6 +62,8 @@ RUN_3D_TRIANGULATION_NAME = "Run 3d triangulation?"
 RUN_BUTTERWORTH_FILTER_NAME = "Run butterworth filter?"
 
 NUMBER_OF_PROCESSES_PARAMETER_NAME = "Max Number of Processes to Use"
+
+RUN_FACE_BLENDSHAPES_TRACKER_NAME = "Run Face Blendshapes tracker?"
 
 
 # TODO: figure out how to generalize this
@@ -234,6 +237,26 @@ def create_post_processing_parameter_group(
     )
 
 
+def create_face_blendshapes_parameter_group(
+        parameter_model: FaceBlendshapesParametersModel = None,
+) -> Parameter:
+    if parameter_model is None:
+        parameter_model = FaceBlendshapesParametersModel()
+
+    return Parameter.create(
+        name="Face Blendshapes",
+        type="group",
+        children=[
+            dict(
+                name=RUN_FACE_BLENDSHAPES_TRACKER_NAME,
+                type="bool",
+                value=parameter_model.run_face_blendshapes_tracker,
+                tip="If true, run the skellytracker face blendshapes tracker on the face camera video",
+            ),
+        ],
+    )
+
+
 def extract_parameter_model_from_parameter_tree(
         parameter_object: Parameter,
 ) -> ProcessingParameterModel:
@@ -272,6 +295,9 @@ def extract_parameter_model_from_parameter_tree(
                 order=parameter_values_dictionary[BUTTERWORTH_ORDER],
             ),
             run_butterworth_filter=parameter_values_dictionary[RUN_BUTTERWORTH_FILTER_NAME],
+        ),
+        face_blendshapes_parameters_model=FaceBlendshapesParametersModel(
+            run_face_blendshapes_tracker=parameter_values_dictionary.get(RUN_FACE_BLENDSHAPES_TRACKER_NAME, False)
         ),
     )
 
