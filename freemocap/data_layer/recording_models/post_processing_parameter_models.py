@@ -42,6 +42,10 @@ class YoloObjectTrackerParametersModel(BaseModel):
     fill_gaps: bool = True
 
 
+class FaceBlendshapesParametersModel(BaseModel):
+    run_face_blendshapes_tracker: bool = False
+
+
 class ProcessingParameterModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     recording_info_model: RecordingInfoModel = None
@@ -49,4 +53,5 @@ class ProcessingParameterModel(BaseModel):
     yolo_object_tracker_parameters_model: YoloObjectTrackerParametersModel = YoloObjectTrackerParametersModel()
     anipose_triangulate_3d_parameters_model: AniposeTriangulate3DParametersModel = AniposeTriangulate3DParametersModel()
     post_processing_parameters_model: PostProcessingParametersModel = PostProcessingParametersModel()
+    face_blendshapes_parameters_model: FaceBlendshapesParametersModel = FaceBlendshapesParametersModel()
     tracking_model_info: ModelInfo = MediapipeModelInfo()

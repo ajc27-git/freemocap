@@ -12,6 +12,7 @@ from freemocap.data_layer.recording_models.post_processing_parameter_models impo
     PostProcessingParametersModel,
     ButterworthFilterParametersModel,
     YoloObjectTrackerParametersModel,
+    FaceBlendshapesParametersModel,
 )
 
 BUTTERWORTH_ORDER = "Order"
@@ -78,6 +79,7 @@ YOLO_OBJECT_CONFIDENCE_THRESHOLD = "Confidence Threshold"
 
 YOLO_OBJECT_FILL_GAPS = "Fill gaps in 3D tracks"
 
+RUN_FACE_BLENDSHAPES_TRACKER_NAME = "Run Face Blendshapes tracker?"
 
 class FileWidget(QWidget):
     sigChanged = Signal(object)
@@ -137,6 +139,7 @@ class FileParameter(Parameter):
 
 
 registerParameterType('file', FileParameter, override=True)
+
 
 # TODO: figure out how to generalize this
 def create_mediapipe_parameter_group(
@@ -352,6 +355,26 @@ def create_post_processing_parameter_group(
     )
 
 
+def create_face_blendshapes_parameter_group(
+        parameter_model: FaceBlendshapesParametersModel = None,
+) -> Parameter:
+    if parameter_model is None:
+        parameter_model = FaceBlendshapesParametersModel()
+
+    return Parameter.create(
+        name="Face Blendshapes",
+        type="group",
+        children=[
+            dict(
+                name=RUN_FACE_BLENDSHAPES_TRACKER_NAME,
+                type="bool",
+                value=parameter_model.run_face_blendshapes_tracker,
+                tip="If true, run the skellytracker face blendshapes tracker on the face camera video",
+            ),
+        ],
+    )
+
+
 def extract_parameter_model_from_parameter_tree(
         parameter_object: Parameter,
 ) -> ProcessingParameterModel:
@@ -397,6 +420,9 @@ def extract_parameter_model_from_parameter_tree(
                 order=parameter_values_dictionary[BUTTERWORTH_ORDER],
             ),
             run_butterworth_filter=parameter_values_dictionary[RUN_BUTTERWORTH_FILTER_NAME],
+        ),
+        face_blendshapes_parameters_model=FaceBlendshapesParametersModel(
+            run_face_blendshapes_tracker=parameter_values_dictionary.get(RUN_FACE_BLENDSHAPES_TRACKER_NAME, False)
         ),
     )
 
