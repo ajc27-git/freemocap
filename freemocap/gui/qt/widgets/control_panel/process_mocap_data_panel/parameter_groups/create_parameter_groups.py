@@ -1,4 +1,7 @@
-from pyqtgraph.parametertree import Parameter
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QPushButton, QWidget
+from pyqtgraph.parametertree import Parameter, registerParameterType
+from pyqtgraph.parametertree.parameterTypes import SimpleParameter, WidgetParameterItem
 from skellytracker.trackers.mediapipe_tracker.mediapipe_model_info import (
     MediapipeTrackingParams,
 )
@@ -8,6 +11,7 @@ from freemocap.data_layer.recording_models.post_processing_parameter_models impo
     AniposeTriangulate3DParametersModel,
     PostProcessingParametersModel,
     ButterworthFilterParametersModel,
+    YoloObjectTrackerParametersModel,
     FaceBlendshapesParametersModel,
 )
 
@@ -63,7 +67,78 @@ RUN_BUTTERWORTH_FILTER_NAME = "Run butterworth filter?"
 
 NUMBER_OF_PROCESSES_PARAMETER_NAME = "Max Number of Processes to Use"
 
+YOLO_OBJECT_TRACKER_TREE_NAME = "YOLO Object Tracker"
+
+RUN_YOLO_OBJECT_TRACKER_NAME = "Run YOLO object tracker?"
+
+YOLO_OBJECT_CUSTOM_MODEL_PATH = "Custom Model Path"
+
+YOLO_OBJECT_MODEL_SIZE = "YOLO Model Size"
+
+YOLO_OBJECT_CONFIDENCE_THRESHOLD = "Confidence Threshold"
+
+YOLO_OBJECT_FILL_GAPS = "Fill gaps in 3D tracks"
+
 RUN_FACE_BLENDSHAPES_TRACKER_NAME = "Run Face Blendshapes tracker?"
+
+class FileWidget(QWidget):
+    sigChanged = Signal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(2)
+        self.setLayout(self.layout)
+
+        self.line_edit = QLineEdit()
+        self.line_edit.setPlaceholderText("Click '...' to load model file")
+        self.line_edit.setStyleSheet("QLineEdit { border: 1px solid gray; color: black; background-color: white; }")
+        self.layout.addWidget(self.line_edit)
+
+        self.button = QPushButton("...")
+        self.button.setStyleSheet("QPushButton { color: black; border: 1px solid gray; background-color: #f0f0f0; }")
+        self.button.setFixedWidth(30)
+        self.layout.addWidget(self.button)
+
+        self.button.setFixedWidth(24)  # slightly smaller looks better
+        self.button.setFixedHeight(self.line_edit.minimumSizeHint().height())
+
+
+    def value(self):
+        return self.line_edit.text()
+
+    def setValue(self, value):
+        self.line_edit.setText(str(value))
+
+
+class FileParameterItem(WidgetParameterItem):
+    def __init__(self, param, depth):
+        super().__init__(param, depth)
+        self.hideWidget = False  # <-- THIS is the key line
+
+    def makeWidget(self):
+        w = FileWidget()
+        w.line_edit.textChanged.connect(self.param.setValue)
+        w.button.clicked.connect(self.select_file)
+        return w
+
+    def select_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Select File",
+            "",
+            "YOLO Models (*.pt);;All Files (*)",
+        )
+        if file_path:
+            self.param.setValue(file_path)
+
+
+class FileParameter(Parameter):
+    itemClass = FileParameterItem
+
+
+registerParameterType('file', FileParameter, override=True)
 
 
 # TODO: figure out how to generalize this
@@ -147,6 +222,49 @@ def create_mediapipe_parameter_group(
                 tip="If true, the model will process each image independently, without tracking across frames."
                     "I think this is equivalent to setting `min_tracking_confidence` to 0.0"
                     "Variable name in `mediapipe` code: `static_image_mode`",
+            ),
+        ],
+    )
+
+
+def create_yolo_object_tracker_parameter_group() -> Parameter:
+    yolo_model_size_list = ["nano", "small", "medium", "large", "extra_large", "high_res"]
+    return Parameter.create(
+        name=YOLO_OBJECT_TRACKER_TREE_NAME,
+        type="group",
+        children=[
+            dict(
+                name=RUN_YOLO_OBJECT_TRACKER_NAME,
+                type="bool",
+                value=False,
+                tip="If enabled, track the classes defined in the YOLO model.",
+            ),
+            dict(
+                name=YOLO_OBJECT_MODEL_SIZE,
+                type="list",
+                limits=yolo_model_size_list,
+                value="small",
+                tip="Size of pretrained YOLO model to use.",
+            ),
+            dict(
+                name=YOLO_OBJECT_CONFIDENCE_THRESHOLD,
+                type="float",
+                value=0.5,
+                step=0.05,
+                limits=(0.0, 1.0),
+                tip="Minimum confidence for a detected object to be valid.",
+            ),
+            dict(
+                name=YOLO_OBJECT_FILL_GAPS,
+                type="bool",
+                value=True,
+                tip="If true, fill data gaps utilizing cubic spline interpolation for missing YOLO tracking frames.",
+            ),
+            dict(
+                name=YOLO_OBJECT_CUSTOM_MODEL_PATH,
+                type="file",
+                value="",
+                tip="Path to a custom trained YOLO model (e.g., best.pt).",
             ),
         ],
     )
@@ -278,6 +396,13 @@ def extract_parameter_model_from_parameter_tree(
                 parameter_values_dictionary[BOUNDING_BOX_BUFFER_METHOD]
             ),
             bounding_box_buffer_percentage=parameter_values_dictionary[BOUNDING_BOX_BUFFER_PERCENTAGE],
+        ),
+        yolo_object_tracker_parameters_model=YoloObjectTrackerParametersModel(
+            run_yolo_object_tracker=parameter_values_dictionary[RUN_YOLO_OBJECT_TRACKER_NAME],
+            custom_model_path=parameter_values_dictionary.get(YOLO_OBJECT_CUSTOM_MODEL_PATH),
+            model_size=parameter_values_dictionary.get(YOLO_OBJECT_MODEL_SIZE, "small"),
+            confidence_threshold=parameter_values_dictionary.get(YOLO_OBJECT_CONFIDENCE_THRESHOLD, 0.5),
+            fill_gaps=parameter_values_dictionary.get(YOLO_OBJECT_FILL_GAPS, True),
         ),
         anipose_triangulate_3d_parameters_model=AniposeTriangulate3DParametersModel(
             run_reprojection_error_filtering=parameter_values_dictionary[RUN_REPROJECTION_ERROR_FILTERING],

@@ -18,6 +18,7 @@ from freemocap.gui.qt.utilities.save_and_load_gui_state import GuiState
 from freemocap.gui.qt.widgets.control_panel.calibration_control_panel import CalibrationControlPanel
 from freemocap.gui.qt.widgets.control_panel.process_mocap_data_panel.parameter_groups.create_parameter_groups import (
     create_mediapipe_parameter_group,
+    create_yolo_object_tracker_parameter_group,
     create_3d_triangulation_parameter_group,
     create_post_processing_parameter_group,
     create_face_blendshapes_parameter_group,
@@ -134,6 +135,7 @@ class ProcessMotionCaptureDataPanel(QWidget):
                         self._create_new_run_this_step_parameter(run_step_name=RUN_IMAGE_TRACKING_NAME),
                         self._create_num_processes_parameter(),
                         create_mediapipe_parameter_group(session_processing_parameter_model.tracking_parameters_model),
+                        create_yolo_object_tracker_parameter_group(),
                         create_face_blendshapes_parameter_group(session_processing_parameter_model.face_blendshapes_parameters_model),
                     ],
                     tip="Methods for tracking 2d points in images (e.g. mediapipe, deeplabcut(TODO), openpose(TODO), etc ...)",
