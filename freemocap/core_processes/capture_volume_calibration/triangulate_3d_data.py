@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+from typing import Optional
 from pathlib import Path
 
 import numpy as np
@@ -21,7 +22,7 @@ def triangulate_3d_data(
         max_drop_ratio: float = 0.4,
         mean_error_threshold: float = 0.01,
         kill_event: multiprocessing.Event = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray]]:
     number_of_cameras = image_2d_data.shape[0]
     number_of_frames = image_2d_data.shape[1]
     number_of_tracked_points = image_2d_data.shape[2]

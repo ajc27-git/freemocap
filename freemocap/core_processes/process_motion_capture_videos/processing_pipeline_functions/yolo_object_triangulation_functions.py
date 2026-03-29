@@ -27,7 +27,7 @@ def get_yolo_objects_triangulated_data(
     processing_parameters: ProcessingParameterModel,
     kill_event: Optional[multiprocessing.Event] = None,
     queue: Optional[multiprocessing.Queue] = None,
-) -> np.ndarray:
+) -> Optional[np.ndarray]:
     """
     Triangulate 2D YOLO object data to 3D.
     
@@ -95,10 +95,15 @@ def get_yolo_objects_triangulated_data(
             yolo_objects_3d_data,
             reprojection_error_fr_mar,
             reprojection_error_cam_fr_mar,
+            used_cameras_mask,
         ) = triangulate_3d_data(
             anipose_calibration_object=anipose_calibration_object,
             image_2d_data=image_2d_data,
             use_triangulate_ransac=processing_parameters.anipose_triangulate_3d_parameters_model.use_triangulate_ransac_method,
+            use_triangulate_outlier_rejection=processing_parameters.anipose_triangulate_3d_parameters_model.use_triangulate_outlier_rejection,
+            max_drop_amount=processing_parameters.anipose_triangulate_3d_parameters_model.max_drop_amount,
+            max_drop_ratio=processing_parameters.anipose_triangulate_3d_parameters_model.max_drop_ratio,
+            mean_error_threshold=processing_parameters.anipose_triangulate_3d_parameters_model.mean_error_threshold,
             kill_event=kill_event,
         )
         
@@ -112,6 +117,7 @@ def get_yolo_objects_triangulated_data(
             yolo_objects_3d_data=yolo_objects_3d_data,
             reprojection_error_fr_mar=reprojection_error_fr_mar,
             reprojection_error_cam_fr_mar=reprojection_error_cam_fr_mar,
+            used_cameras_mask=used_cameras_mask,
             data_folder_path=Path(processing_parameters.recording_info_model.output_data_folder_path) / YOLO_OBJECT_TRACKING_FOLDER_NAME,
         )
         
@@ -129,7 +135,7 @@ def process_single_camera_yolo_objects_data(
     input_image_data_frame_marker_xyz: np.ndarray,
     data_folder_path: Path,
     project_to_z_plane: bool = True,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Process YOLO objects data from a single camera.
     For single camera, we can't triangulate, so we use 2D data with Z=0.
@@ -221,6 +227,7 @@ def save_yolo_objects_3d_data(
     reprojection_error_fr_mar: np.ndarray,
     reprojection_error_cam_fr_mar: np.ndarray,
     data_folder_path: Path,
+    used_cameras_mask: Optional[np.ndarray] = None,
 ):
     """
     Save YOLO objects 3D data to files.
@@ -236,5 +243,10 @@ def save_yolo_objects_3d_data(
     
     reprojection_error_cam_path = data_folder_path / "yolo_objects_reprojection_error_cam.npy"
     np.save(reprojection_error_cam_path, reprojection_error_cam_fr_mar)
+
+    if used_cameras_mask is not None:
+        mask_path = data_folder_path / "yolo_objects_outlier_rejection_used_cameras_mask.npy"
+        np.save(mask_path, used_cameras_mask)
+        logger.info(f"Saved YOLO objects used cameras mask to: {mask_path}")
 
 
