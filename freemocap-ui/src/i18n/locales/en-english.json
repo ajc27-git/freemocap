@@ -237,6 +237,7 @@
   "menuRecording": "Recording",
   "menuData": "Data",
   "menuLoadTestData": "Load Test Data",
+  "menuLoadSampleData": "Load Sample Data",
   "menuClearActiveRecording": "Clear Active Recording",
   "menuHelp": "Help",
   "menuTakeTour": "Take the Tour",

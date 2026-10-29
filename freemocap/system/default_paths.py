@@ -46,7 +46,22 @@ def get_default_freemocap_base_folder_path() -> str:
 def get_default_freemocap_recordings_path() -> str:
     return str(Path(get_default_freemocap_base_folder_path()) / "recordings")
 
-FREEMOCAP_TEST_DATA_PATH = str(Path(get_default_freemocap_recordings_path()) / "freemocap_test_data")
+
+# Names of the public datasets that FreeMoCap downloads from GitHub releases and extracts
+# into the recordings folder (see `freemocap.utilities.download_sample_data`).
+FREEMOCAP_TEST_DATA_RECORDING_NAME = "freemocap_test_data"
+FREEMOCAP_SAMPLE_DATA_RECORDING_NAME = "freemocap_sample_data"
+
+FREEMOCAP_TEST_DATA_PATH = str(Path(get_default_freemocap_recordings_path()) / FREEMOCAP_TEST_DATA_RECORDING_NAME)
+FREEMOCAP_SAMPLE_DATA_PATH = str(
+    Path(get_default_freemocap_recordings_path()) / FREEMOCAP_SAMPLE_DATA_RECORDING_NAME
+)
+
+
+def get_recording_path_in_default_recordings_folder(recording_name: str) -> str:
+    """Absolute path to `recording_name` inside the default recordings folder."""
+    return str(Path(get_default_freemocap_recordings_path()) / recording_name)
+
 
 def get_default_recording_folder_path(tag: str = "") -> str:
     return str(Path(get_default_freemocap_base_folder_path()) / "recordings" / default_recording_name(string_tag=tag))

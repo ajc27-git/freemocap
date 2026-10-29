@@ -20,6 +20,7 @@ export type MenuAction =
     | 'open-recording-folder'
     | 'show-pipeline-progress'
     | 'load-test-data'
+    | 'load-sample-data'
     | 'clear-active-recording'
     | 'toggle-fullscreen'
     | 'toggle-locale'
@@ -40,6 +41,7 @@ export interface MenuLabels {
     menuRecording: string;
     menuData: string;
     menuLoadTestData: string;
+    menuLoadSampleData: string;
     menuClearActiveRecording: string;
     menuHelp: string;
     menuTakeTour: string;
@@ -77,6 +79,7 @@ const DEFAULT_LABELS: MenuLabels = {
     menuRecording: 'Recording',
     menuData: 'Data',
     menuLoadTestData: 'Load Test Data',
+    menuLoadSampleData: 'Load Sample Data',
     menuClearActiveRecording: 'Clear Active Recording',
     menuHelp: 'Help',
     menuTakeTour: 'Take the Tour',
@@ -271,6 +274,11 @@ function buildDataMenu(t: MenuLabels): MenuItemConstructorOptions {
                 accelerator: 'CmdOrCtrl+T',
                 click: () => sendMenuAction('load-test-data'),
             },
+            {
+                label: t.menuLoadSampleData,
+                click: () => sendMenuAction('load-sample-data'),
+            },
+            { type: 'separator' },
             {
                 label: t.menuClearActiveRecording,
                 click: () => sendMenuAction('clear-active-recording'),

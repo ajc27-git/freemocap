@@ -96,6 +96,11 @@ class ServerUrls {
             stopPipeline: (pipelineId: string) => `${baseUrl}/freemocap/posthoc/pipeline/${encodeURIComponent(pipelineId)}`,
             stopAllPipelines: `${baseUrl}/freemocap/posthoc/pipeline`,
 
+            // Dataset endpoints (download + extract into the recordings folder)
+            datasets: `${baseUrl}/freemocap/data/datasets`,
+            downloadDataset: (datasetKey: string, force?: boolean) =>
+                `${baseUrl}/freemocap/data/datasets/${encodeURIComponent(datasetKey)}/download${force ? '?force=true' : ''}`,
+
             // Telemetry
             trackTelemetry: `${baseUrl}/freemocap/telemetry/track`,
 

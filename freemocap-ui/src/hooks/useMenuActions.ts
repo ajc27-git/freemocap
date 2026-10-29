@@ -9,9 +9,10 @@ import {selectVideoLoadFolder} from '@/store/slices/videos';
 import {activeRecordingCleared, activeRecordingSet} from '@/store/slices/active-recording';
 import {calibrationConfigUpdated} from '@/store/slices/calibration/calibration-slice';
 import {pipelineSnackbarShown} from '@/store/slices/pipelines';
+import {downloadDataset} from '@/store/slices/datasets/dataset-thunks';
+import {fetchAllRecordings} from '@/store/slices/recording-status/recording-status-thunks';
 // import { localeChanged, selectLocale, localeToggled } from '@/store/slices/settings';
-import {isElectron, useElectronIPC} from '@/services/electron-ipc/electron-ipc';
-import {recordingsDirFromBaseFolder} from '@/utils/dataFolder';
+import {isElectron} from '@/services/electron-ipc/electron-ipc';
 import {SUPPORTED_LOCALES} from '@/i18n';
 import {useTutorial} from '@/components/tutorial';
 import type {MenuAction} from '../../electron/main/services/menu-builder';
@@ -24,6 +25,7 @@ const MENU_LABEL_KEYS = [
     'menuRecording',
     'menuData',
     'menuLoadTestData',
+    'menuLoadSampleData',
     'menuClearActiveRecording',
     'menuHelp',
     'menuTakeTour',
@@ -66,7 +68,6 @@ export function useMenuActions({ onToggleSidebar }: UseMenuActionsParams): void 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
-    const { api } = useElectronIPC();
     const { startTour } = useTutorial();
 
     const isRecording = useAppSelector((state) => state.recording.isRecording);
@@ -182,21 +183,31 @@ export function useMenuActions({ onToggleSidebar }: UseMenuActionsParams): void 
                     break;
 
                 // Data actions
-                case 'load-test-data': {
-                    if (!api) break;
+                case 'load-test-data':
+                case 'load-sample-data': {
+                    // Download (if needed) from GitHub, extract into the recordings folder,
+                    // then make it the active recording and show it in Playback.
+                    const datasetKey = menuAction === 'load-test-data' ? 'test' : 'sample';
                     try {
-                        const baseFolder: string = await api.fileSystem.getBaseDataFolder.query();
-                        const baseDirectory = recordingsDirFromBaseFolder(baseFolder);
+                        const dataset = await dispatch(downloadDataset({datasetKey})).unwrap();
                         dispatch(activeRecordingSet({
-                            baseDirectory,
-                            recordingName: 'freemocap_test_data',
+                            recordingName: dataset.recordingName,
+                            baseDirectory: dataset.baseDirectory ?? undefined,
                             origin: 'browsed',
                         }));
-                        dispatch(calibrationConfigUpdated({
-                            charucoBoard: { squares_x: 7, squares_y: 5, square_length_mm: 58 },
-                        }));
+                        if (datasetKey === 'test') {
+                            // freemocap_test_data was filmed with a 7x5 / 58 mm ChArUco board
+                            dispatch(calibrationConfigUpdated({
+                                charucoBoard: { squares_x: 7, squares_y: 5, square_length_mm: 58 },
+                            }));
+                        }
+                        // Refresh the recordings list so the newly extracted folder shows up
+                        await dispatch(fetchAllRecordings({
+                            recordingParentDirectory: dataset.baseDirectory,
+                        })).unwrap();
+                        navigate('/playback');
                     } catch (error) {
-                        console.error('Failed to resolve home directory for test data:', error);
+                        console.error(`Failed to load '${datasetKey}' dataset:`, error);
                     }
                     break;
                 }
@@ -207,5 +218,5 @@ export function useMenuActions({ onToggleSidebar }: UseMenuActionsParams): void 
         });
 
         return cleanup;
-    }, [dispatch, navigate, isRecording, onToggleSidebar, api, startTour]);
+    }, [dispatch, navigate, isRecording, onToggleSidebar, startTour]);
 }
